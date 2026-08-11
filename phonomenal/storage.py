@@ -1,0 +1,20 @@
+CREATE_COMMENTS_TABLE = """
+CREATE TABLE IF NOT EXISTS comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    text TEXT NOT NULL,
+    ingested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+CREATE_CLASSIFICATIONS_TABLE = """
+CREATE TABLE IF NOT EXISTS classifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    comment_id INTEGER NOT NULL,
+    category TEXT NOT NULL,
+    confidence REAL,
+    schema_version INTEGER NOT NULL,
+    classified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    notes TEXT,
+    FOREIGN KEY (comment_id) REFERENCES comments(id)
+);
+"""
