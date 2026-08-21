@@ -2,6 +2,7 @@ import os
 from anthropic import Anthropic
 from dotenv import load_dotenv
 from phonomenal.schemas import ClassificationResult
+from phonomenal.storage import get_connection
 
 load_dotenv()
 
@@ -40,7 +41,6 @@ CLASSIFICATION_TOOL = {
     },
 }
 
-
 def classify_comment(comment_text):
     response = client.messages.create(
         model="claude-sonnet-4-6",
@@ -59,8 +59,41 @@ def classify_comment(comment_text):
     result = ClassificationResult(**tool_use_block.input)
     return result
 
+def save_classification(comment_id, result):
+    conn = get_connection()
+    conn.execute(
+        """
+        INSERT INTO classifications (comment_id, category, confidence, schema_version, notes)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (comment_id, result.category, result.confidence, SCHEMA_VERSION, result.reasoning),
+    )
+    conn.commit()
+    conn.close()
+
+def get_unclassified_comments():
+    conn = get_connection()
+    rows = conn.execute(
+        """
+        SELECT comments.id, comments.text
+        FROM comments
+        LEFT JOIN classifications ON comments.id = classifications.comment_id
+        WHERE classifications.id IS NULL
+        """
+    ).fetchall()
+    conn.close()
+    return rows
 
 if __name__ == "__main__":
-    test_comment = "I write things that come to my mind, dude."
-    result = classify_comment(test_comment)
+    conn = get_connection()
+    row = conn.execute("SELECT id, text FROM comments LIMIT 1").fetchone()
+    conn.close()
+
+    comment_id, comment_text = row
+    print(f"Classifying comment #{comment_id}: {comment_text}")
+
+    result = classify_comment(comment_text)
     print(result)
+
+    save_classification(comment_id, result)
+    print("Saved.")
