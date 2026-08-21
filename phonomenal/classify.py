@@ -85,15 +85,13 @@ def get_unclassified_comments():
     return rows
 
 if __name__ == "__main__":
-    conn = get_connection()
-    row = conn.execute("SELECT id, text FROM comments LIMIT 1").fetchone()
-    conn.close()
+    unclassified = get_unclassified_comments()
+    print(f"Found {len(unclassified)} comments to classify.")
 
-    comment_id, comment_text = row
-    print(f"Classifying comment #{comment_id}: {comment_text}")
-
-    result = classify_comment(comment_text)
-    print(result)
-
-    save_classification(comment_id, result)
-    print("Saved.")
+    for comment_id, comment_text in unclassified:
+        try:
+            result = classify_comment(comment_text)
+            save_classification(comment_id, result)
+            print(f"#{comment_id}: {result.category} (confidence {result.confidence})")
+        except Exception as e:
+            print(f"#{comment_id}: FAILED — {e}")
