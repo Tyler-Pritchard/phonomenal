@@ -5,21 +5,17 @@ from phonomenal.storage import get_connection
 
 RAW_COMMENTS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data", "raw", "Comments.rtf"
+    "data", "raw", "comments.txt"
 )
 
-
 def load_raw_text():
-    with open(RAW_COMMENTS_PATH, "r") as f:
-        rtf_content = f.read()
-    return rtf_to_text(rtf_content, errors="ignore")
-
+    with open(RAW_COMMENTS_PATH, "r", encoding="utf-8") as f:
+        return f.read()
 
 def split_comments(raw_text):
-    lines = raw_text.split("\n")
-    comments = [line.strip() for line in lines if line.strip()]
+    blocks = raw_text.split("\n\n")
+    comments = [block.strip() for block in blocks if block.strip()]
     return comments
-
 
 def insert_comments(comments):
     conn = get_connection()
