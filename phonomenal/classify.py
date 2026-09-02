@@ -8,7 +8,7 @@ load_dotenv()
 
 client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 CLASSIFICATION_TOOL = {
     "name": "classify_comment",
@@ -17,16 +17,25 @@ CLASSIFICATION_TOOL = {
         "type": "object",
         "properties": {
             "category": {
-                "type": "string",
-                "enum": [
-                    "lyric_fragment",
-                    "theme",
-                    "observation",
-                    "story",
-                    "joke",
-                    "social_commentary",
-                    "discard",
-                ],
+            "type": "string",
+            "enum": [
+                "lyric_fragment",
+                "theme",
+                "observation",
+                "story",
+                "joke",
+                "social_commentary",
+                "discard",
+            ],
+                "description": (
+                    "lyric_fragment: reads like a line that could go directly into a song. "
+                    "theme: a recurring idea or feeling, not tied to one specific claim. "
+                    "observation: a standalone remark or noticing about something, WITHOUT making an argument or taking a position — even if the subject is political or social. "
+                    "story: describes a specific event, anecdote, or narrative. "
+                    "joke: primarily intended as humor. "
+                    "social_commentary: explicitly argues, criticizes, or takes a stance on a political/social issue — not just mentioning one. "
+                    "discard: noise, not usable."
+                ),
             },
             "confidence": {
                 "type": "number",
