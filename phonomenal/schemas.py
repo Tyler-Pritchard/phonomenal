@@ -1,9 +1,9 @@
 from pydantic import BaseModel
-from typing import Literal
+from typing import Literal, List
 
 
 class ClassificationResult(BaseModel):
-    category: Literal[
+    categories: List[Literal[
         "lyric_fragment",
         "theme",
         "observation",
@@ -11,6 +11,6 @@ class ClassificationResult(BaseModel):
         "joke",
         "social_commentary",
         "discard",
-    ]
+    ]]
     confidence: float
     reasoning: str

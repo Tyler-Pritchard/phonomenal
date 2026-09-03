@@ -8,7 +8,7 @@ load_dotenv()
 
 client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 4
 
 CLASSIFICATION_TOOL = {
     "name": "classify_comment",
@@ -16,24 +16,34 @@ CLASSIFICATION_TOOL = {
     "input_schema": {
         "type": "object",
         "properties": {
-            "category": {
-            "type": "string",
-            "enum": [
-                "lyric_fragment",
-                "theme",
-                "observation",
-                "story",
-                "joke",
-                "social_commentary",
-                "discard",
-            ],
+            "categories": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": [
+                        "lyric_fragment",
+                        "theme",
+                        "observation",
+                        "story",
+                        "joke",
+                        "social_commentary",
+                        "discard",
+                    ],
+                },
+                "minItems": 1,
                 "description": (
+                    "One or two categories that best apply to this comment. Most comments fit exactly one category — "
+                    "only choose two if the comment genuinely does both at once (for example, a comment that makes a wry "
+                    "observation about something while also implicitly criticizing it). "
+                    "When a comment both notices something AND carries an implicit critical undertone, prefer including "
+                    "BOTH 'observation' and 'social_commentary' rather than choosing only one — err on the side of "
+                    "including both labels in ambiguous cases like this. "
                     "lyric_fragment: reads like a line that could go directly into a song. "
                     "theme: a recurring idea or feeling, not tied to one specific claim. "
-                    "observation: a standalone remark or noticing about something, WITHOUT making an argument or taking a position — even if the subject is political or social. "
+                    "observation: a standalone remark or noticing about something, without making an argument or taking a position. "
                     "story: describes a specific event, anecdote, or narrative. "
                     "joke: primarily intended as humor. "
-                    "social_commentary: explicitly argues, criticizes, or takes a stance on a political/social issue — not just mentioning one. "
+                    "social_commentary: explicitly argues, criticizes, or takes a stance on a political/social issue. "
                     "discard: noise, not usable."
                 ),
             },
@@ -46,8 +56,7 @@ CLASSIFICATION_TOOL = {
                 "description": "A brief explanation of why this category was chosen.",
             },
         },
-        "required": ["category", "confidence", "reasoning"],
-    },
+        "required": ["categories", "confidence", "reasoning"],    },
 }
 
 def classify_comment(comment_text):
@@ -70,13 +79,14 @@ def classify_comment(comment_text):
 
 def save_classification(comment_id, result):
     conn = get_connection()
-    conn.execute(
-        """
-        INSERT INTO classifications (comment_id, category, confidence, schema_version, notes)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (comment_id, result.category, result.confidence, SCHEMA_VERSION, result.reasoning),
-    )
+    for category in result.categories:
+        conn.execute(
+            """
+            INSERT INTO classifications (comment_id, category, confidence, schema_version, notes)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (comment_id, category, result.confidence, SCHEMA_VERSION, result.reasoning),
+        )
     conn.commit()
     conn.close()
 
@@ -101,6 +111,6 @@ if __name__ == "__main__":
         try:
             result = classify_comment(comment_text)
             save_classification(comment_id, result)
-            print(f"#{comment_id}: {result.category} (confidence {result.confidence})")
+            print(f"#{comment_id}: {result.categories} (confidence {result.confidence})")
         except Exception as e:
             print(f"#{comment_id}: FAILED — {e}")
